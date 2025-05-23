@@ -38,4 +38,7 @@ push:
 
 clean:
 	rm -rf task3_5*
-	-docker rmi $(REGISTRY)/$(APP):*
+	@for plat in $(PLATFORMS); do \
+		OS=$${plat%/*}; ARCH=$${plat#*/}; \
+		docker rmi ${REGISTRY}/${APP}:${VERSION}-$$OS-$$ARCH || true; \
+	done
