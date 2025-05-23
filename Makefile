@@ -1,27 +1,40 @@
 IMAGE_NAME=multiarch-test
-PLATFORMS=linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
-REGISTRY=quay.io/yourorg/$(IMAGE_NAME)
-DOCKER_BUILDX=buildx
+APP=$(shell basename $(shell git remote get-url origin))
+REGISTRY=ghcr.io/fedor22i/$(IMAGE_NAME)
+VERSION=v1.0
+PLATFORMS = linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
 
-all: linux arm64 macos windows
+format:
+	gofmt -s -w ./
 
-linux:
-	$(DOCKER_BUILDX) build --platform linux/amd64 -t $(REGISTRY):linux-amd64 --push -f Dockerfile .
+get:
+	go get
 
-arm64:
-	$(DOCKER_BUILDX) build --platform linux/arm64 -t $(REGISTRY):linux-arm64 --push -f Dockerfile .
+lint:
+	golint
 
-macos:
-	$(DOCKER_BUILDX) build --platform darwin/amd64 -t $(REGISTRY):darwin-amd64 --push -f Dockerfile .
-	$(DOCKER_BUILDX) build --platform darwin/arm64 -t $(REGISTRY):darwin-arm64 --push -f Dockerfile .
+test:
+	go test -v
 
-windows:
-	$(DOCKER_BUILDX) build --platform windows/amd64 -t $(REGISTRY):windows-amd64 --push -f Dockerfile .
+build: format get
+	@for plat in $(PLATFORMS); do \
+    	GOOS=$${plat%/*} GOARCH=$${plat#*/} \
+    	CGO_ENABLED=0 go build -v -o task3_5-$${plat%/*}-$${plat#*/} \
+    	-ldflags "-X github.com/fedor22i/task3_5/cmd.appVersion=${VERSION}"; \
+    done
+
+image:
+	@for plat in $(PLATFORMS); do \
+		OS=$${plat%/*}; ARCH=$${plat#*/}; \
+		docker build --platform=$$OS/$$ARCH . \
+		-t ${REGISTRY}/${APP}:${VERSION}-$$OS-$$ARCH; \
+	done
+
+push:
+	@for plat in $(PLATFORMS); do \
+		OS=$${plat%/*}; ARCH=$${plat#*/}; \
+		docker push ${REGISTRY}/${APP}:${VERSION}-$$OS-$$ARCH; \
+	done
 
 clean:
-	@echo "Cleaning up docker images..."
-	-docker rmi $(REGISTRY):linux-amd64
-	-docker rmi $(REGISTRY):linux-arm64
-	-docker rmi $(REGISTRY):darwin-amd64
-	-docker rmi $(REGISTRY):darwin-arm64
-	-docker rmi $(REGISTRY):windows-amd64
+	rm -rf task3_5*
