@@ -1,8 +1,10 @@
-FROM golang:1.24 AS builder
+FROM --platform=$BUILDPLATFORM golang:latest AS builder
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /go/src/app
 COPY . .
-RUN make build
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o task3_5 .
 
 FROM scratch
 WORKDIR /

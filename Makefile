@@ -26,7 +26,7 @@ build: format get
 image:
 	@for plat in $(PLATFORMS); do \
 		OS=$${plat%/*}; ARCH=$${plat#*/}; \
-		docker build --platform=$$OS/$$ARCH . \
+		docker build --build-arg TARGETOS=$$OS --build-arg TARGETARCH=$$ARCH .\
 		-t ${REGISTRY}/${APP}:${VERSION}-$$OS-$$ARCH; \
 	done
 
