@@ -38,3 +38,4 @@ push:
 
 clean:
 	rm -rf task3_5*
+	-docker rmi $(REGISTRY)/$(APP):*
